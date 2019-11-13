@@ -88,12 +88,15 @@ class Parser:
         body = self.parse_statements(end_tokens=('name:endfor',
                                                     'name:else'),
                                                 drop_needle=False)
+        test = None
+        if self.token_stream.skip_if('name:if'):
+            test = self.parse_expression()
         token = next(self.token_stream)
         if token.test('name:else'):
             else_ = self.parse_statements(end_tokens=('name:endfor',))
         else:
             else_ = []
-        return nodes.For(target, iter, body, else_, lineno=lineno)
+        return nodes.For(target, iter, body, test, else_, lineno=lineno)
 
     def parse_block(self):
         lineno = self.token_stream.expect('name:block').lineno
@@ -112,7 +115,7 @@ class Parser:
             target = self.parse_assign_target()
             self.token_stream.expect(tokens.ASSIGN)
             value = self.parse_expression()
-            # target.set_ctx('store')
+            target.set_ctx('param')
             targets.append(target)
             values.append(value)
 
@@ -123,6 +126,7 @@ class Parser:
         target = self.parse_tuple(simplified=True, 
                                 extra_end_rules=extra_end_rules)
         # assert target.can_assign()
+        target.set_ctx('store')
         return target
 
     def parse_expression(self):
@@ -240,7 +244,7 @@ class Parser:
             return nodes.Const(''.join(buffer), lineno=lineno)
         elif token.type is tokens.NAME:
             next(self.token_stream)
-            return nodes.Name(token.value, lineno=lineno)
+            return nodes.Name(token.value, 'load', lineno=lineno)
         elif token.type is tokens.LPAREN:
             next(self.token_stream)
             node = self.parse_tuple(explicit_parens=True)
@@ -281,7 +285,7 @@ class Parser:
                 self.fail('expected expression for %s' % self.token_stream.current.value,
                         self.token_stream.lineno)
 
-        return nodes.Tuple(items, lineno=lineno)
+        return nodes.Tuple(items, 'load', lineno=lineno)
 
     def parse_list(self):
         lineno = self.token_stream.expect(tokens.LBRACKET).lineno
@@ -371,12 +375,12 @@ class Parser:
         if token.type is tokens.DOT:
             attr_token = next(self.token_stream)
             if attr_token.type is tokens.NAME:
-                return nodes.Getattr(node, attr_token.value, 
+                return nodes.Getattr(node, attr_token.value, 'load', 
                                     lineno=token.lineno)
             self.fail('expected name instead of %r' % token.value, 
                     lineno=token.lineno)
         elif token.type is tokens.LBRACKET:
-            node = nodes.Getitem(node, self.parse_subscribed(),
+            node = nodes.Getitem(node, self.parse_subscribed(), 'load',
                                 lineno=token.lineno)
             self.token_stream.expect(tokens.RBRACKET)
             return node
@@ -439,7 +443,11 @@ class Parser:
                 next(self.token_stream)
                 if test_end_tokens(self.token_stream.current):
                     return body
-                add_data(self.parse_statement())
+                rv = self.parse_statement()
+                if isinstance(rv, list):
+                    body.extend(rv)
+                else:
+                    body.append(rv)
                 self.token_stream.expect(tokens.BLOCK_END)
             else:
                 raise AssertionError('unexpected token %r in line %r' % (token.value, token.lineno))

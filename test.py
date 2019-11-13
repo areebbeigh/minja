@@ -1,7 +1,9 @@
 from lexer import Lexer
 from parser import Parser
+from compiler import generate
 
 class E:
+    autoescape = True
     def tokenize(self, source):
         l = Lexer(None)
         return l.tokenize(source)
@@ -13,7 +15,7 @@ template = '''
     {{func()}}
     heya
 {% endif %}
-{% with x, y = (1, 2) %}
+{% with x, y = (1, 'test') %}
     {{x}}
 {% endwith %}
 {% block test %}
@@ -21,6 +23,17 @@ template = '''
         {{i}}
     {% endfor %}
 {% endblock %}'''
+
+template = '''
+{{hello}}
+{% block content %}
+{% for i in items %}
+    {{i}}
+{% else %}
+    heya
+{% endfor %}
+{% endblock %}
+'''
 
 e = E()
 l = Lexer(None)
@@ -36,4 +49,8 @@ p = Parser(e, template)
 
 # print(next(stream))
 
-print(p.parse())
+ast = p.parse()
+print(ast)
+s = generate(ast, e, 'test')
+with open('output.py', 'w') as f:
+    f.write(s)

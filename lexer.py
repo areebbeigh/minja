@@ -300,4 +300,6 @@ class Lexer:
                 value = int(value)
             elif token == tokens.FLOAT:
                 value = float(value)
+            elif token == tokens.STRING:
+                value = value[1:-1]
             yield Token(lineno, token, value)
