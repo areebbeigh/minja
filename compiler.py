@@ -3,7 +3,7 @@ from nodes import EvalContext
 from idtracking import (Symbols, VAR_LOAD_PARAM, VAR_LOAD_RESOLVE, 
                         VAR_LOAD_STORE, VAR_LOAD_UNDEFINED)
 from visitor import NodeVisitor
-from utils import escape
+from utils import escape, concat
 from io import StringIO
 
 operators = {
@@ -331,12 +331,12 @@ class CodeGenerator(NodeVisitor):
         arguments = []
         for item in body:
             if isinstance(item, list):
-                format.append(u''.join(item).replace('%', '%%'))
+                format.append(concat(item).replace('%', '%%'))
             else:
                 format.append('%s')
                 arguments.append(item)
         self.writeline('yield ')
-        self.write(repr(u''.join(format)))
+        self.write(repr(concat(format)))
         if arguments:
             self.write(' % (')
             self.indent()

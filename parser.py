@@ -1,6 +1,7 @@
 import nodes
 import tokens
 from lexer import reversed_operators
+from utils import concat
 
 _statement_keywords = ('for', 'with', 'if', 'block', 'extends')
 _compare_operators = ('eq', 'neq', 'geq', 'leq', 'gt', 'lt')
@@ -241,7 +242,7 @@ class Parser:
             buffer = [next(self.token_stream).value]
             while self.token_stream.current.type is tokens.STRING:
                 buffer.append(next(self.token_stream).value)
-            return nodes.Const(''.join(buffer), lineno=lineno)
+            return nodes.Const(concat(buffer), lineno=lineno)
         elif token.type is tokens.NAME:
             next(self.token_stream)
             return nodes.Name(token.value, 'load', lineno=lineno)

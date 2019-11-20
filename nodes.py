@@ -1,6 +1,8 @@
 import operator
 from collections import deque
 
+from utils import concat
+
 _binop_to_func = {
     '*':        operator.mul,
     '/':        operator.truediv,
@@ -71,7 +73,7 @@ class Node:
             if idx != len(self.fields) - 1:
                 rv.append(', ')
         rv.append(')')
-        return ''.join(rv)
+        return concat(rv)
 
     def iter_fields(self, exclude=None, only=None):
         for name in self.fields:
