@@ -11,5 +11,5 @@ class NodeVisitor:
         return self.generic_visitor(node, *args, **kwargs)
 
     def generic_visitor(self, node, *args, **kwargs):
-        for node in node.iter_child_nodes():
-            self.visit(node, *args, **kwargs)
+        for n in node.iter_child_nodes():
+            self.visit(n, *args, **kwargs)

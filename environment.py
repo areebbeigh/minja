@@ -2,21 +2,48 @@ import sys
 
 from lexer import TemplateSyntaxError
 from parser import Parser
+from lexer import Lexer
 from compiler import generate
 from utils import concat
-from runtime import new_context
+from runtime import new_context, Undefined
 
 
 class Environment:
     def __init__(self, autoescape=False):
         self.autoescape = autoescape
+        self.lexer = Lexer(self)
+        self.undefined = Undefined
 
     def handle_exception(self, exc_info, source_hint=None):
         pass
 
+    def getitem(self, obj, argument):
+        try:
+            return obj[argument]
+        except (AttributeError, TypeError, LookupError):
+            if isinstance(argument, str):
+                try:
+                    return getattr(obj, argument)
+                except AttributeError:
+                    pass
+            return self.undefined(obj=obj, name=argument)
+        
+    def getattr(self, obj, attribute):
+        try:
+            return getattr(obj, attribute)
+        except AttributeError:
+            pass
+        try:
+            return obj[attribute]
+        except(TypeError, LookupError, AttributeError):
+            return self.undefined(obj=obj, name=attribute)
+
     def from_string(self, source):
         return Template.from_code(self, self.compile(source))
     
+    def tokenize(self, source):
+        return self.lexer.tokenize(source)
+
     def _parse(self, source, name, filename):
         return Parser(self, source).parse()
 
@@ -37,6 +64,8 @@ class Environment:
                 source_hint = source
                 source = self._parse(source, name, filename)
             source = self._generate(source, name, filename)
+            with open('output.py', 'w') as f:
+                f.write(source)
             if filename is None:
                 filename = '<template>'
             rv = self._compile(source, filename)

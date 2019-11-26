@@ -27,6 +27,12 @@ class Context:
         if item is missing:
             raise KeyError(key)
         return item
+    
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
 
     def resolve(self, key):
         rv = resolve_or_missing(self, key)
@@ -36,7 +42,7 @@ class Context:
 
     def resolve_or_missing(self, key):
         rv = self.resolve(key)
-        if isinstance(rv, Undefined):
+        if isinstance(rv, self.environment.undefined):
             rv = missing
         return rv
 
@@ -46,6 +52,14 @@ class Context:
         if not self.parent:
             return self.vars
         return dict(self.parent, **self.vars)
+
+    def call(self, obj, *args, **kwargs):
+        try:
+            return obj(*args, **kwargs)
+        except StopIteration:
+            return self.environment.undefined('value was undefined because '
+                            'a callable raised a '
+                            'StopIteration exception.')
 
 
 def new_context(environment, template_name, blocks, vars=None):
@@ -57,19 +71,13 @@ def new_context(environment, template_name, blocks, vars=None):
 
 class Undefined:
     def __init__(self, hint=None, obj=missing, name=None):
-        self._undefined_hint = hint, 
+        self._undefined_hint = hint
         self._undefined_obj = obj
         self._undefined_name = name
 
     def __getattr__(self, name):
         return self.fail_with_undefined_error()
     
-    __add__ = __radd__ = __mul__ = __rmul__ = __div__ = __rdiv__ = \
-        __truediv__ = __rtruediv__ = __floordiv__ = __rfloordiv__ = \
-        __mod__ = __rmod__ = __pos__ = __neg__ = __call__ = \
-        __getitem__ = __lt__ = __le__ = __gt__ = __ge__ = __int__ = \
-        __float__ = __complex__ = __pow__ = __rpow__ = __sub__ = \
-        __rsub__ = fail_with_undefined_error
     
     def __eq__(self, other):
         return type(self) is type(other)
@@ -87,3 +95,12 @@ class Undefined:
         else:
             hint = self._undefined_hint
         raise UndefinedError(hint)
+
+    __add__ = __radd__ = __mul__ = __rmul__ = __div__ = __rdiv__ = \
+        __truediv__ = __rtruediv__ = __floordiv__ = __rfloordiv__ = \
+        __mod__ = __rmod__ = __pos__ = __neg__ = __call__ = \
+        __getitem__ = __lt__ = __le__ = __gt__ = __ge__ = __int__ = \
+        __float__ = __complex__ = __pow__ = __rpow__ = __sub__ = \
+        __rsub__ = fail_with_undefined_error
+
+__all__ = ['missing']

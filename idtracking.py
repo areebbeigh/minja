@@ -19,6 +19,14 @@ class Symbols:
         self.loads = {}
         self.stores = set()
     
+    def copy(self):
+        rv = object.__new__(self.__class__)
+        rv.__dict__.update(self.__dict__)
+        rv.refs = self.refs.copy()
+        rv.loads = self.loads.copy()
+        rv.stores = self.stores.copy()
+        return rv
+
     def analyze_node(self, node, **kwargs):
         visitor = RootVisitor(self)
         visitor.visit(node, **kwargs)

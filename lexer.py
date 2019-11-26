@@ -1,5 +1,6 @@
 import re
 from sys import intern
+from collections import deque
 
 import tokens
 
@@ -104,6 +105,7 @@ class TokenStream:
     def __init__(self, generator):
         """A token stream with `.current` as the current active token"""
         self._iter = generator
+        self._pushed = deque()
         self.current = Token(0, tokens.INITIAL, '')
         self.closed = False
         next(self)
@@ -113,10 +115,13 @@ class TokenStream:
         if self.closed:
             return self.current
         rv = self.current
-        try:
-            self.current = next(self._iter)
-        except StopIteration:
-            self.close()
+        if self._pushed:
+            self.current = self._pushed.popleft()
+        else:
+            try:
+                self.current = next(self._iter)
+            except StopIteration:
+                self.close()
         return rv
 
     def __iter__(self):
@@ -132,6 +137,16 @@ class TokenStream:
             next(self)
             return True
         return False
+
+    def push(self, token):
+        self._pushed.append(token)
+
+    def look(self):
+        old_token = next(self)
+        rv = self.current
+        self.push(rv)
+        self.current = old_token
+        return rv
 
     def close(self):
         self.current = Token(self.current.lineno, tokens.EOF, '')

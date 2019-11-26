@@ -20,7 +20,7 @@ class Parser:
         self.token_stream = environment.tokenize(source)
 
     def fail(self, msg, lineno):
-        assert (msg, lineno) is False
+        raise Exception(msg, lineno)
 
     def unknown_tag(self, lineno):
         assert lineno is False
@@ -365,7 +365,7 @@ class Parser:
                                 lineno=token.lineno))
                 else:
                     ensure(not kwargs)
-                    args = self.parse_expression()
+                    args.append(self.parse_expression())
             require_comma = True
         self.token_stream.expect(tokens.RPAREN)
         return nodes.Call(node, args, kwargs, dyn_args, dyn_kwargs, 
@@ -393,7 +393,7 @@ class Parser:
         lineno = self.token_stream.current.lineno
 
         while self.token_stream.current.type is not tokens.RBRACKET:
-            token = next(self.token_stream)
+            token = self.token_stream.current
             if token.type is tokens.COLON:
                 # we were expecting an argument
                 # append None for empty arguments e.g [:10]

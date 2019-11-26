@@ -62,6 +62,15 @@ class Frame:
             return Frame(self.eval_ctx, level=self.symbols.level + 1)
         return Frame(self.eval_ctx, self)
 
+    def copy(self):
+        rv = object.__new__(self.__class__)
+        rv.__dict__.update(self.__dict__)
+        rv.symbols = self.symbols.copy()
+        return rv
+
+    def soft(self):
+        rv = self.copy()
+        return rv
 
 class CodeGenerator(NodeVisitor):
     def __init__(self, environment, name, stream):
@@ -146,7 +155,7 @@ class CodeGenerator(NodeVisitor):
 
     def write_commons(self):
         self.writeline('resolve = context.resolve_or_missing')
-        self.writeline('undefined = evironment.undefined')
+        self.writeline('undefined = environment.undefined')
         self.writeline('if 0: yield None')
 
     def signature(self, node, frame):
@@ -168,6 +177,8 @@ class CodeGenerator(NodeVisitor):
         eval_ctx = EvalContext(self.environment, self.name)
         # TODO: Write runtime imports
 
+        from runtime import __all__ as exported
+        self.writeline('from runtime import %s' % ', '.join(exported))
         for block in node.find_all(nodes.Block):
             if block.name in self.blocks:
                 self.fail('block %r defined twice' % 
@@ -210,7 +221,7 @@ class CodeGenerator(NodeVisitor):
                         for x in self.blocks), extra=1)
     
     def visit_Block(self, node, frame):
-        self.writeline('yield from context.blocks[%r][0](%s)' % (
+        self.writeline('yield from context.blocks[%r](%s)' % (
                         node.name, 'context'))
     
     def visit_For(self, node, frame):
@@ -257,7 +268,8 @@ class CodeGenerator(NodeVisitor):
         self.indent()
         self.enter_frame(loop_frame)
         self.blockvisit(node.body, loop_frame)
-        self.writeline('%s = 0' % iter_indicator)
+        if node.else_:
+            self.writeline('%s = 0' % iter_indicator)
         self.outdent()
         self.leave_frame(loop_frame, not node.else_)
         
@@ -272,7 +284,7 @@ class CodeGenerator(NodeVisitor):
     def visit_If(self, node, frame):
         if_frame = frame.soft()
         self.writeline('if ', node)
-        self.visit(node.body, if_frame)
+        self.visit(node.test, if_frame)
         self.write(':')
         self.indent()
         self.blockvisit(node.body, if_frame)
@@ -435,7 +447,7 @@ class CodeGenerator(NodeVisitor):
     del binop, unaop
 
     def visit_Compare(self, node, frame):
-        self.visit(node.expr)
+        self.visit(node.expr, frame)
         for op in node.operands:
             self.visit(op, frame)
 
@@ -446,7 +458,7 @@ class CodeGenerator(NodeVisitor):
     def visit_Getattr(self, node, frame):
         self.write('environment.getattr(')
         self.visit(node.node, frame)
-        self.write(', %r' % node.attr)
+        self.write(', %r)' % node.attr)
 
     def visit_Getitem(self, node, frame):
         if isinstance(node.arg, nodes.Slice):
