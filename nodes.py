@@ -209,12 +209,17 @@ class Getattr(Expr):
     fields = ('node', 'attr', 'ctx')
 
 class Getitem(Expr):
-    fields = ('node', 'attr', 'ctx')
+    fields = ('node', 'arg', 'ctx')
 
     def as_const(self, eval_ctx=None):
         eval_ctx = get_eval_ctx(self, eval_ctx)
-        # TODO: inspect original
-        
+        if self.ctx != 'load':
+            raise Impossible()
+        try:
+            self.environment.getitem(self.node.as_const(),
+                                    self.arg.as_const())
+        except Exception:
+            raise Impossible()
 
 class Slice(Expr):
     fields = ('start', 'stop', 'step')

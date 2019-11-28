@@ -78,13 +78,23 @@ class Undefined:
     def __getattr__(self, name):
         return self.fail_with_undefined_error()
     
-    
     def __eq__(self, other):
         return type(self) is type(other)
     
     def __ne__(self, other):
         return not self.__eq__(other)
     
+    def __str__(self):
+        return u''
+    
+    def __repr__(self):
+        return 'Undefined'
+    
+    def __bool__(self):
+        return False
+    
+    __nonzero__ = __bool__
+
     def fail_with_undefined_error(self, *args, **kwargs):
         if not self._undefined_hint:
             if self._undefined_name:

@@ -43,7 +43,7 @@ template = '''
     {{obj.x}}
     {{hello}}
     {% with x = 100 %}
-        {{func(x, 1)}}
+        {{func(x)}}
     {% endwith %}
     {% block test %}
         {{hello, func(2)}}
@@ -66,15 +66,21 @@ template = '''
 
 e = E()
 l = Lexer(None)
-# stream = l.tokenize(template)
-# for i in range(10):
-#     print(next(stream), stream.closed)
 p = Parser(e, template)
-# stream = (l.tokenize(template))
-
-# for l in stream:
-#     print(l)
-
-# print(next(stream))
 t = Template(template)
-print(t.render(items=[1,2,3,4]))
+
+# print(p.parse())
+
+def t_():
+    return 'this is test'
+
+class A:
+    x = 1
+
+source = t.render(
+    items=[1,2,3,4],
+    test=t_,
+    obj=A(),
+    func=lambda x: x,
+    d=(1,23,4))
+print(source)

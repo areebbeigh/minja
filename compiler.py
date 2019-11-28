@@ -345,7 +345,7 @@ class CodeGenerator(NodeVisitor):
             if isinstance(item, list):
                 format.append(concat(item).replace('%', '%%'))
             else:
-                format.append('%s')
+                format.append('%s') # TOFIX: item is a tuple/list/iterable
                 arguments.append(item)
         self.writeline('yield ')
         self.write(repr(concat(format)))
@@ -361,6 +361,9 @@ class CodeGenerator(NodeVisitor):
                 self.visit(argument, frame)
                 self.write(')' * close)
             self.outdent()
+            if len(arguments) == 1:
+                # trailing comma for tuple with len 1
+                self.write(',')
             self.writeline(')')
 
     def visit_Name(self, node, frame):
@@ -394,7 +397,7 @@ class CodeGenerator(NodeVisitor):
         idx = -1
         for idx, item in enumerate(node.items):
             if idx:
-                self.write(',')
+                self.write(', ')
             self.visit(item, frame)
         self.write(idx == 0 and ',' or ')')
 
@@ -402,7 +405,7 @@ class CodeGenerator(NodeVisitor):
         self.write('[')
         for idx, item in enumerate(node.items):
             if idx:
-                self.write(',')
+                self.write(', ')
             self.visit(item, frame)
         self.write(']')
 
@@ -410,7 +413,7 @@ class CodeGenerator(NodeVisitor):
         self.write('{')
         for idx, item in enumerate(node.items()):
             if idx:
-                self.write(',')
+                self.write(', ')
             self.visit(item.key, frame)
             self.write(':')
             self.visit(item.value, frame)
