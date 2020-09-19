@@ -1,5 +1,5 @@
 # minja
-#### [ Work in progress ]
+#### ~[ Work in progress ]~ 
 
 A basic (and heavily jinja inspired) python template engine intended to teach myself basic compiler design.
 
@@ -26,10 +26,12 @@ def f():
     return [1,2,3,4]
 
 t = Template(template, autoescape=True)
-print(t.render(hello="Hey there!",
-    hello2="<h1>Sup? I'm escaped</h1>",
-    get_list=f,
-    func=lambda x: x))
+print(
+    t.render(
+        hello="Hey there!",
+        hello2="<h1>Sup? I'm escaped</h1>",
+        get_list=f,
+        func=lambda x: x))
 ```
 Output:
 ```html
